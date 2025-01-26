@@ -19,7 +19,7 @@ API_DESCRIPTION = """
 class Settings(BaseSettings):
     """
     Базовые настройки проекта. Выполняет инициализацию параметров из
-    переменных окружения для подключения к базам данных.
+    переменных окружения.
     """
     DEBUG: bool = Field(default=False, description="True or False")
     ALLOWED_HOSTS: str = Field(default="localhost 127.0.0.1")
@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     DB_HOST: str = Field(description='Database host')
     DB_PORT: str = Field(description='Database port')
     DB_NAME: str = Field(description='Database name')
+
+    CURRENCY_DATA_API: str
+
+    SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: str
 
     @property
     def get_async_database_url(self) -> str:
