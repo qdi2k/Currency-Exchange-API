@@ -28,7 +28,7 @@ class User(Base):
         String(255), unique=True, nullable=False
     )
     username: Mapped[str] = mapped_column(
-        String(50), unique=True, nullable=False
+        String(50), nullable=False
     )
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     data_register: Mapped[datetime.datetime] = mapped_column(
