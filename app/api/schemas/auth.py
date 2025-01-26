@@ -27,3 +27,7 @@ class RequestUserLogin(BaseModel):
 
 class ResponseUserLogin(BaseModel):
     token: str
+
+
+class AllUserData(UserData):
+    password: str
