@@ -26,5 +26,4 @@ class RequestUserLogin(BaseModel):
 
 
 class ResponseUserLogin(BaseModel):
-    access: str
-    refresh: str
+    token: str
