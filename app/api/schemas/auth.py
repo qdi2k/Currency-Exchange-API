@@ -21,7 +21,7 @@ class ResponseUserCreate(UserData):
 
 
 class RequestUserLogin(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 
