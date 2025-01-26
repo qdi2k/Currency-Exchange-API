@@ -33,7 +33,7 @@ class AuthUserService:
                 detail="Пользователь с таким Email уже существует"
             )
 
-        user_data.password = await get_password_hash(password=user_data.password)
+        user_data.password = get_password_hash(password=user_data.password)
         user_dict: Dict[str, Any] = user_data.model_dump()
 
         async with self.uow:

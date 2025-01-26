@@ -9,14 +9,14 @@ from app.core.config import settings
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-async def get_password_hash(password: str) -> str:
+def get_password_hash(password: str) -> str:
     """
     Хэширует пароль с использованием bcrypt.
     """
     return pwd_context.hash(password)
 
 
-async def verify_password(plain_password: str, hashed_password: str) -> bool:
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Проверяет, соответствует ли пароль его хэшу.
     """
