@@ -9,21 +9,21 @@ from app.core.config import settings
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def get_password_hash(password: str) -> str:
+async def get_password_hash(password: str) -> str:
     """
     Хэширует пароль с использованием bcrypt.
     """
     return pwd_context.hash(password)
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
+async def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Проверяет, соответствует ли пароль его хэшу.
     """
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def create_access_token(data: Dict[str, Any]) -> str:
+async def create_access_token(data: Dict[str, Any]) -> str:
     """
     Создает JWT-токен и добавляет к нему полезную нагрузку
     """
@@ -40,7 +40,7 @@ def create_access_token(data: Dict[str, Any]) -> str:
     )
 
 
-def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
+async def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
     """
     Декодирует JWT-токен, возвращая его полезную нагрузку
     """
