@@ -6,13 +6,14 @@ from starlette import status
 
 from app.api.schemas.auth import (RequestUserCreate, ResponseUserCreate,
                                   RequestUserLogin, ResponseUserLogin,
-                                  UserData)
-from app.core.security import get_password_hash
+                                  AllUserData)
+from app.core.security import (get_password_hash, verify_password,
+                               create_access_token)
 from app.db.models import User
 from app.utils.unitofwork import IUnitOfWork
 
 
-class UserService:
+class AuthUserService:
     """
     Бизнес логика работы с пользователями
     """
@@ -32,7 +33,7 @@ class UserService:
                 detail="Пользователь с таким Email уже существует"
             )
 
-        user_data.password = get_password_hash(password=user_data.password)
+        user_data.password = await get_password_hash(password=user_data.password)
         user_dict: Dict[str, Any] = user_data.model_dump()
 
         async with self.uow:
@@ -52,11 +53,26 @@ class UserService:
         """
         Вход пользователя в систему
         """
-        ...
+        user = await self.find_user_by_email(user_email=user_data.email)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Пользователь с таким Email не найден"
+            )
+        if not verify_password(user_data.password, user.password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Неверный пароль",
+            )
+
+        return ResponseUserLogin(token=await create_access_token(
+            data={"email": user.email, "user_id": user.id}
+        ))
+
 
     async def find_user_by_email(
             self, user_email: EmailStr
-    ) -> Optional[UserData]:
+    ) -> Optional[AllUserData]:
         """
         Поиск пользователя по email
         """
@@ -67,13 +83,14 @@ class UserService:
             return self._convert_to_user_data(user_data)
 
     @staticmethod
-    def _convert_to_user_data(user_data: User) -> UserData:
+    def _convert_to_user_data(user_data: User) -> AllUserData:
         """
         Преобразование данных из SQLAlchemy в Pydantic модель
         """
-        return UserData(
+        return AllUserData(
             id=user_data.id,
             email=user_data.email,
             username=user_data.username,
             data_register=user_data.data_register,
+            password=user_data.password,
         )
