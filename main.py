@@ -6,11 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from app.api.endpoints.auth import user_router
+from app.api.endpoints.todo import todo_router
 from app.core.config import settings, API_TITLE, API_VERSION, API_DESCRIPTION
 from app.core.log_config import init_loggers
 from app.core.middleware import ExceptionHandlerMiddleware
-
-from app.api.endpoints.todo import todo_router
 
 
 class FastAPIApp:
@@ -55,6 +55,7 @@ class FastAPIApp:
         ### Подключает роутеры к приложению `FastAPI`.
         """
         self.app.include_router(todo_router)
+        self.app.include_router(user_router)
 
     def include_openapi(self) -> None:
         """
