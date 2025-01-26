@@ -13,6 +13,10 @@ class AbstractRepository(ABC):
     async def find_all(self):
         raise NotImplementedError
 
+    @abstractmethod
+    async def get_one(self, **filters):
+        raise NotImplementedError
+
 
 class Repository(AbstractRepository):
     model = None
@@ -28,3 +32,8 @@ class Repository(AbstractRepository):
     async def find_all(self):
         result = await self.session.execute(select(self.model))
         return result.scalars().all()
+
+    async def get_one(self, **filters):
+        stmt = select(self.model).filter_by(**filters)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
