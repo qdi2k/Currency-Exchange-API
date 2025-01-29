@@ -24,19 +24,17 @@ class Settings(BaseSettings):
     DEBUG: bool = Field(default=False, description="True or False")
     ALLOWED_HOSTS: str = Field(default="localhost 127.0.0.1")
 
-    SCHEME: str = 'postgresql+asyncpg'
-
     DB_USER: str = Field(description='Database username')
     DB_PASS: str = Field(description='Database password')
     DB_HOST: str = Field(description='Database host')
     DB_PORT: str = Field(description='Database port')
     DB_NAME: str = Field(description='Database name')
 
-    CURRENCY_DATA_API: str
+    CURRENCY_DATA_API: str = Field(description='TOKEN APILAYER')
 
-    SECRET_KEY: str
-    ALGORITHM: str
-    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    SECRET_KEY: str = Field(description='JWT secret key')
+    ALGORITHM: str = Field(description='JWT crypto algorithm')
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(description='JWT time-life')
 
     @property
     def get_async_database_url(self) -> str:
