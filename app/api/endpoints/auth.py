@@ -11,6 +11,9 @@ user_router = APIRouter(prefix="/auth", tags=["Auth"])
 async def get_user_service(
         uow: IUnitOfWork = Depends(UnitOfWork)
 ) -> AuthUserService:
+    """
+    Создает и возвращает экземпляр сервиса аутентификации пользователей.
+    """
     return AuthUserService(uow)
 
 
