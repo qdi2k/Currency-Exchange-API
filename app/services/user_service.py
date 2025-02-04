@@ -1,15 +1,19 @@
-from typing import Optional, Dict, Any
+from os import path
+from typing import Optional
 
-from fastapi import HTTPException
+from fastapi import HTTPException, BackgroundTasks, Request
+from fastapi_mail import MessageSchema, MessageType, FastMail
 from pydantic import EmailStr
 from starlette import status
+from starlette.datastructures import URL
 
 from app.api.schemas.auth import (RequestUserCreate, ResponseUserCreate,
                                   RequestUserLogin, ResponseUserLogin,
-                                  AllUserData)
+                                  UserSchema)
+from app.core.config import settings, BASE_DIR
 from app.core.security import (get_password_hash, verify_password,
-                               create_access_token)
-from app.db.models import User
+                               create_access_token,
+                               generate_verification_token)
 from app.utils.unitofwork import IUnitOfWork
 
 
@@ -22,22 +26,45 @@ class AuthUserService:
         self.uow = uow
 
     async def registration(
-            self, user_data: RequestUserCreate
+            self, request: Request, user_data: RequestUserCreate,
+            background_tasks: BackgroundTasks
     ) -> ResponseUserCreate:
         """
         Регистрация пользователя
         """
-        if await self.find_user_by_email(user_email=user_data.email):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Пользователь с таким Email уже существует"
-            )
-
-        user_data.password = get_password_hash(password=user_data.password)
-        user_dict: Dict[str, Any] = user_data.model_dump()
-
         async with self.uow:
-            user_from_db = await self.uow.user.add_one(user_dict)
+            user = await self.uow.user.get_one(email=user_data.email)
+
+            if user and user.verified:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Пользователь с таким Email уже существует"
+                )
+
+            user_data.password = get_password_hash(password=user_data.password)
+            user_dict = user_data.model_dump()
+
+            if user and not user.verified:
+                verification_token = generate_verification_token(
+                    user_id=user.id
+                )
+                user_dict["verification_token"] = verification_token
+                await self.uow.user.update_one(user.id, user_dict)
+                user_from_db = await self.uow.user.get_one(id=user.id)
+            else:
+                user_from_db = await self.uow.user.add_one(user_dict)
+                verification_token = generate_verification_token(
+                    user_id=user_from_db.id
+                )
+                await self.uow.user.update_one(
+                    user_id=user_from_db.id,
+                    data={"verification_token": verification_token}
+                )
+
+            background_tasks.add_task(
+                send_mail_confirm,
+                request.base_url, user_from_db.email, verification_token
+            )
             user_to_return = ResponseUserCreate.model_validate({
                 "id": user_from_db.id,
                 "email": user_from_db.email,
@@ -72,25 +99,35 @@ class AuthUserService:
 
     async def find_user_by_email(
             self, user_email: EmailStr
-    ) -> Optional[AllUserData]:
-        """
-        Поиск пользователя по email
-        """
+    ) -> Optional[UserSchema]:
+        """Поиск пользователя по email."""
         async with self.uow:
             user_data = await self.uow.user.get_one(email=user_email)
             if user_data is None:
                 return None
-            return self._convert_to_user_data(user_data)
+            return user_data
 
-    @staticmethod
-    def _convert_to_user_data(user_data: User) -> AllUserData:
-        """
-        Преобразование данных из SQLAlchemy в Pydantic модель
-        """
-        return AllUserData(
-            id=user_data.id,
-            email=user_data.email,
-            username=user_data.username,
-            data_register=user_data.data_register,
-            password=user_data.password,
-        )
+
+async def send_mail_confirm(
+    base_url: URL, email: EmailStr, verification_token: str
+) -> None:
+    """Отправка пользователю сообщения подтверждения регистрации."""
+    url_confirm = (
+        f'{base_url}api/auth/register-confirm?'
+        + f'key={verification_token}'
+    )
+
+    template_path = path.join(BASE_DIR, 'template/register_confirm.html')
+    with open(template_path, "r", encoding="utf-8") as file:
+        html_template = file.read()
+    html = html_template.format(url_confirm=url_confirm)
+
+    message = MessageSchema(
+        subject="Подтвердите регистрацию на Currency Exchange",
+        recipients=[email],
+        body=html,
+        subtype=MessageType.html,
+        bcc=[]
+    )
+    fm = FastMail(settings.MAIL_CONF)
+    await fm.send_message(message)
