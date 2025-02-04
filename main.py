@@ -6,8 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from app.api.endpoints.auth import user_router
-from app.api.endpoints.todo import todo_router
+from app.api.routes.auth import user_router
+from app.api.routes.todo import todo_router
 from app.core.config import settings, API_TITLE, API_VERSION, API_DESCRIPTION
 from app.core.log_config import init_loggers
 from app.core.middleware import ExceptionHandlerMiddleware
