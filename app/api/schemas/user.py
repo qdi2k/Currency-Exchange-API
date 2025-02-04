@@ -29,6 +29,11 @@ class ResponseUserLogin(BaseModel):
     token: str
 
 
+class ResponseAcceptUser(BaseModel):
+    message: str = "Поздравляем с успешной регистрацией!"
+    token: str
+
+
 class UserSchema(BaseModel):
     id: int
     email: EmailStr
