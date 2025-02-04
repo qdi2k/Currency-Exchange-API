@@ -7,7 +7,7 @@ from pydantic import EmailStr
 from starlette import status
 from starlette.datastructures import URL
 
-from app.api.schemas.auth import (RequestUserCreate, ResponseUserCreate,
+from app.api.schemas.user import (RequestUserCreate, ResponseUserCreate,
                                   RequestUserLogin, ResponseUserLogin,
                                   UserSchema)
 from app.core.config import settings, BASE_DIR
