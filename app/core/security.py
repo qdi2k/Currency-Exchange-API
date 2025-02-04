@@ -1,13 +1,21 @@
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Annotated
 
 import jwt
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from itsdangerous import (URLSafeTimedSerializer, BadSignature,
                           SignatureExpired)
+from jwt import PyJWTError
 from passlib.context import CryptContext
+from starlette import status
 
+from app.api.schemas.user import TokenData
 from app.core.config import settings
+from app.core.exception import (credentials_token_err,
+                                credentials_not_token_exception)
 
+security = HTTPBearer(auto_error=False)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
@@ -35,7 +43,7 @@ def generate_verification_token(user_id: int) -> str:
 
 def verify_verification_token(
         token: str, max_age: int = 3600
-    ) -> Optional[int]:
+) -> Optional[int]:
     """
     Проверка токена для подтверждения email.
     """
@@ -75,3 +83,34 @@ async def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
         )
     except jwt.PyJWTError:
         return None
+
+
+async def get_current_user(
+        credentials: Annotated[
+            HTTPAuthorizationCredentials, Depends(security)
+        ]
+) -> TokenData:
+    """
+    Зависимость, которая проверяет JWT-токен и возвращает его полезную
+    нагрузку. Если токен невалиден, выбрасывает исключение 401.
+    """
+    if not credentials:
+        raise credentials_not_token_exception
+    if not credentials or credentials.scheme != "Bearer":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Неверный формат токена"
+        )
+
+    token = credentials.credentials
+    payload = await decode_access_token(token=token)
+    try:
+        if not payload:
+            raise credentials_token_err
+        email, user_id = payload.get("email"), payload.get("user_id")
+        if email is None or user_id is None:
+            raise credentials_token_err
+    except PyJWTError:
+        raise credentials_token_err
+
+    return TokenData(email=email, user_id=user_id)
