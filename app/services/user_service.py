@@ -1,5 +1,4 @@
 from os import path
-from typing import Optional
 
 from fastapi import HTTPException, BackgroundTasks, Request
 from fastapi_mail import MessageSchema, MessageType, FastMail
@@ -9,7 +8,7 @@ from starlette.datastructures import URL
 
 from app.api.schemas.user import (RequestUserCreate, ResponseUserCreate,
                                   RequestUserLogin, ResponseUserLogin,
-                                  UserSchema, ResponseAcceptUser)
+                                  ResponseAcceptUser)
 from app.core.config import settings, BASE_DIR
 from app.core.security import (get_password_hash, verify_password,
                                create_access_token,
@@ -68,9 +67,7 @@ class AuthUserService:
                      + " Нажмите на ссылку внутри, чтобы начать.")
         )
 
-    async def register_confirm(
-            self, key: str
-    ):
+    async def register_confirm(self, key: str) -> ResponseAcceptUser:
         """Подтверждение регистрации пользователя."""
         user_id = verify_verification_token(token=key)
         if not user_id:
@@ -86,47 +83,34 @@ class AuthUserService:
                     status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
                     detail="Этот пользователь уже подтвердил свой аккаунт"
                 )
-
             token = await create_access_token(
                 data={"email": user.email, "user_id": user.id}
             )
             await self.uow.user.update_one(
-            user_id = user_id, data = {"verified": True}
+                user_id = user_id, data = {"verified": True}
             )
-
             await self.uow.commit()
             return ResponseAcceptUser(token=token)
 
-    async def login(
-            self, user_data: RequestUserLogin
-    ) -> ResponseUserLogin:
+    async def login(self, user_data: RequestUserLogin) -> ResponseUserLogin:
         """Вход пользователя в систему."""
-        user = await self.find_user_by_email(user_email=user_data.email)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Пользователь с таким Email не найден"
-            )
-        if not verify_password(user_data.password, user.password):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Неверный пароль",
-            )
-
-        return ResponseUserLogin(token=await create_access_token(
-            data={"email": user.email, "user_id": user.id}
-        ))
-
-
-    async def find_user_by_email(
-            self, user_email: EmailStr
-    ) -> Optional[UserSchema]:
-        """Поиск пользователя по email."""
         async with self.uow:
-            user_data = await self.uow.user.get_one(email=user_email)
-            if user_data is None:
-                return None
-            return user_data
+            user = await self.uow.user.get_one(email=user_data.email)
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Пользователь с таким Email не найден"
+                )
+            if not verify_password(user_data.password, user.password):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Неверный пароль",
+                )
+            token = await create_access_token(
+                data={"email": user.email, "user_id": user.id}
+            )
+            await self.uow.commit()
+            return ResponseUserLogin(token=token)
 
 
 async def send_mail_confirm(
