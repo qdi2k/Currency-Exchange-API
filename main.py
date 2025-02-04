@@ -54,8 +54,8 @@ class FastAPIApp:
         """
         ### Подключает роутеры к приложению `FastAPI`.
         """
-        self.app.include_router(todo_router)
-        self.app.include_router(user_router)
+        self.app.include_router(todo_router, prefix="/api")
+        self.app.include_router(user_router, prefix="/api")
 
     def include_openapi(self) -> None:
         """
