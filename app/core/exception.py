@@ -28,6 +28,10 @@ credentials_token_err = HTTPException(
     detail="Неверный или истёкший токен",
     headers={"Authenticate": "Bearer"},
 )
+credentials_not_token_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Не были предоставлены данные для доступа"
+)
 
 
 class GlobalTypeError(BaseModel):
