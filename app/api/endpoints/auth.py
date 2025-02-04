@@ -78,9 +78,24 @@ async def accept_user(
     return await user_service.register_confirm(key=key)
 
 
-@user_router.post("/login/", response_model=ResponseUserLogin)
+@user_router.post(path="/login/", response_model=ResponseUserLogin)
 async def user_login(
         user_data: RequestUserLogin,
         user_service: AuthUserService = Depends(get_user_service)
 ):
+    """
+    ## Авторизация пользователя
+
+    Проверка входных данных и генерация нового **JWT** токена
+
+    ---
+    #### Принимает на вход следующие параметры:
+    * `password` - пароль
+
+    * `email` - электронная почта
+
+    #### Возвращает следующие элементы:
+    * `token` - многоразовый токен для предоставления доступа к API
+    ---
+    """
     return await user_service.login(user_data=user_data)
