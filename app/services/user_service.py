@@ -9,11 +9,12 @@ from starlette.datastructures import URL
 
 from app.api.schemas.user import (RequestUserCreate, ResponseUserCreate,
                                   RequestUserLogin, ResponseUserLogin,
-                                  UserSchema)
+                                  UserSchema, ResponseAcceptUser)
 from app.core.config import settings, BASE_DIR
 from app.core.security import (get_password_hash, verify_password,
                                create_access_token,
-                               generate_verification_token)
+                               generate_verification_token,
+                               verify_verification_token)
 from app.utils.unitofwork import IUnitOfWork
 
 
@@ -67,13 +68,39 @@ class AuthUserService:
                      + " Нажмите на ссылку внутри, чтобы начать.")
         )
 
+    async def register_confirm(
+            self, key: str
+    ):
+        """Подтверждение регистрации пользователя."""
+        user_id = verify_verification_token(token=key)
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Неверный ключ подтверждения"
+            )
+
+        async with self.uow:
+            user = await self.uow.user.get_one(id=user_id)
+            if user.verified:
+                raise HTTPException(
+                    status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+                    detail="Этот пользователь уже подтвердил свой аккаунт"
+                )
+
+            token = await create_access_token(
+                data={"email": user.email, "user_id": user.id}
+            )
+            await self.uow.user.update_one(
+            user_id = user_id, data = {"verified": True}
+            )
+
+            await self.uow.commit()
+            return ResponseAcceptUser(token=token)
 
     async def login(
             self, user_data: RequestUserLogin
     ) -> ResponseUserLogin:
-        """
-        Вход пользователя в систему
-        """
+        """Вход пользователя в систему."""
         user = await self.find_user_by_email(user_email=user_data.email)
         if not user:
             raise HTTPException(
@@ -107,7 +134,7 @@ async def send_mail_confirm(
 ) -> None:
     """Отправка пользователю сообщения подтверждения регистрации."""
     url_confirm = (
-        f'{base_url}api/auth/register-confirm?'
+        f'{base_url}api/auth/register-confirm/?'
         + f'key={verification_token}'
     )
 
