@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, BackgroundTasks, Request
+from fastapi import APIRouter, Depends, BackgroundTasks, Request, Query
 from starlette import status
 
 from app.api.schemas.user import (ResponseUserLogin, RequestUserCreate,
-                                  ResponseUserCreate, RequestUserLogin)
+                                  ResponseUserCreate, RequestUserLogin,
+                                  ResponseAcceptUser)
 from app.services.user_service import AuthUserService
 from app.utils.unitofwork import IUnitOfWork, UnitOfWork
 
@@ -49,6 +50,32 @@ async def create_user(
         request=request, user_data=user_data,
         background_tasks=background_tasks
     )
+
+
+@user_router.get(
+    path="/register-confirm/", response_model=ResponseAcceptUser,
+    status_code=status.HTTP_200_OK,
+)
+async def accept_user(
+        user_service: AuthUserService = Depends(get_user_service),
+        key: str = Query(description="Ключ подтверждения регистрации")
+):
+    """
+    ## Подтверждение регистрации пользователя
+
+    Подтверждает статус пользователя как "зарегистрированный" и предоставляет
+    доступ к аккаунту.
+    ---
+    #### Принимает на вход следующие параметры:
+    * `key` - ключ для подтверждения регистрации
+
+    #### Возвращает следующие параметры:
+    * `message` - сообщение об успешной регистрации пользователя
+
+    * `token` - токен для пользования ресурсом
+    ---
+    """
+    return await user_service.register_confirm(key=key)
 
 
 @user_router.post("/login/", response_model=ResponseUserLogin)
