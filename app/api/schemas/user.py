@@ -1,19 +1,23 @@
 import datetime
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from app.api.schemas.validators import password_validator
 
 
 class RequestUserCreate(BaseModel):
     email: EmailStr
-    username: str
-    password: str
+    username: str = Field(..., max_length=100)
+    password: str = Field(..., max_length=64)
+
+    @field_validator("password")
+    def validate_password(cls, value):
+        return password_validator(value=str(value))
 
 
 class ResponseUserCreate(BaseModel):
-    id: int
-    email: EmailStr
-    username: str
-    data_register: datetime.datetime
+    message: str = ("Мы отправили письмо по адресу user@example.com"
+                    + " Нажмите на ссылку внутри, чтобы начать.")
 
 
 class RequestUserLogin(BaseModel):
