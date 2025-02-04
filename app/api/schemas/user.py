@@ -30,3 +30,8 @@ class ResponseUserLogin(BaseModel):
 class ResponseAcceptUser(BaseModel):
     message: str = "Поздравляем с успешной регистрацией!"
     token: str
+
+
+class TokenData(BaseModel):
+    email: str
+    user_id: int
