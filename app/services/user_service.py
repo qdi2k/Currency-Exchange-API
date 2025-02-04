@@ -1,15 +1,19 @@
 from os import path
 
-from fastapi import HTTPException, BackgroundTasks, Request
+from fastapi import BackgroundTasks, Request
 from fastapi_mail import MessageSchema, MessageType, FastMail
 from pydantic import EmailStr
-from starlette import status
 from starlette.datastructures import URL
 
 from app.api.schemas.user import (RequestUserCreate, ResponseUserCreate,
                                   RequestUserLogin, ResponseUserLogin,
                                   ResponseAcceptUser)
 from app.core.config import settings, BASE_DIR
+from app.core.exception import (credentials_auth_email_already,
+                                credentials_wrong_key_accept,
+                                credentials_refresh_user_accepted,
+                                credentials_not_found_user_with_email,
+                                credentials_wrong_password)
 from app.core.security import (get_password_hash, verify_password,
                                create_access_token,
                                generate_verification_token,
@@ -33,10 +37,7 @@ class AuthUserService:
         async with self.uow:
             user = await self.uow.user.get_one(email=user_data.email)
             if user and user.verified:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Пользователь с таким Email уже существует"
-                )
+                raise credentials_auth_email_already
 
             user_data.password = get_password_hash(password=user_data.password)
             user_dict = user_data.model_dump()
@@ -71,18 +72,12 @@ class AuthUserService:
         """Подтверждение регистрации пользователя."""
         user_id = verify_verification_token(token=key)
         if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Неверный ключ подтверждения"
-            )
+            raise credentials_wrong_key_accept
 
         async with self.uow:
             user = await self.uow.user.get_one(id=user_id)
             if user.verified:
-                raise HTTPException(
-                    status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
-                    detail="Этот пользователь уже подтвердил свой аккаунт"
-                )
+                raise credentials_refresh_user_accepted
             token = await create_access_token(
                 data={"email": user.email, "user_id": user.id}
             )
@@ -97,15 +92,9 @@ class AuthUserService:
         async with self.uow:
             user = await self.uow.user.get_one(email=user_data.email)
             if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Пользователь с таким Email не найден"
-                )
+                raise credentials_not_found_user_with_email
             if not verify_password(user_data.password, user.password):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Неверный пароль",
-                )
+                raise credentials_wrong_password
             token = await create_access_token(
                 data={"email": user.email, "user_id": user.id}
             )
