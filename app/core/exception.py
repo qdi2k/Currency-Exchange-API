@@ -23,6 +23,11 @@ credentials_wrong_password = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Неверный пароль",
 )
+credentials_token_err = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Неверный или истёкший токен",
+    headers={"Authenticate": "Bearer"},
+)
 
 
 class GlobalTypeError(BaseModel):
