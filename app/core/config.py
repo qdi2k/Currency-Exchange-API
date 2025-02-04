@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     # Настройки FastAPI
     DEBUG: bool = Field(default=False, description="True or False")
     ALLOWED_HOSTS: str = Field(default="localhost 127.0.0.1")
+    SECRET_KEY: str = Field(description='Secret key')
 
     # Подключение к БД
     DB_USER: str = Field(description='Database username')
@@ -37,7 +38,6 @@ class Settings(BaseSettings):
     CURRENCY_DATA_API: str = Field(description='TOKEN APILAYER')
 
     # Настройки JWT
-    SECRET_KEY: str = Field(description='JWT secret key')
     ALGORITHM: str = Field(description='JWT crypto algorithm')
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(description='JWT time-life')
 
@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     MAIL_USE_CREDENTIALS: bool = True
     MAIL_VALIDATE_CERTS: bool = True
     MAIL_CONF: ConnectionConfig | None = None
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.MAIL_CONF = self.get_connect_email_sender()
 
     @property
     def get_async_database_url(self) -> str:
