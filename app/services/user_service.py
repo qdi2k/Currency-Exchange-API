@@ -29,12 +29,9 @@ class AuthUserService:
             self, request: Request, user_data: RequestUserCreate,
             background_tasks: BackgroundTasks
     ) -> ResponseUserCreate:
-        """
-        Регистрация пользователя
-        """
+        """Регистрация пользователя"""
         async with self.uow:
             user = await self.uow.user.get_one(email=user_data.email)
-
             if user and user.verified:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
@@ -50,7 +47,6 @@ class AuthUserService:
                 )
                 user_dict["verification_token"] = verification_token
                 await self.uow.user.update_one(user.id, user_dict)
-                user_from_db = await self.uow.user.get_one(id=user.id)
             else:
                 user_from_db = await self.uow.user.add_one(user_dict)
                 verification_token = generate_verification_token(
@@ -60,19 +56,17 @@ class AuthUserService:
                     user_id=user_from_db.id,
                     data={"verification_token": verification_token}
                 )
-
-            background_tasks.add_task(
-                send_mail_confirm,
-                request.base_url, user_from_db.email, verification_token
-            )
-            user_to_return = ResponseUserCreate.model_validate({
-                "id": user_from_db.id,
-                "email": user_from_db.email,
-                "username": user_from_db.username,
-                "data_register": user_from_db.data_register,
-            })
             await self.uow.commit()
-            return user_to_return
+
+        background_tasks.add_task(
+            send_mail_confirm,
+            request.base_url, user_data.email, verification_token
+        )
+        return ResponseUserCreate(
+            message=(f"Мы отправили письмо по адресу {user_data.email}"
+                     + " Нажмите на ссылку внутри, чтобы начать.")
+        )
+
 
     async def login(
             self, user_data: RequestUserLogin
