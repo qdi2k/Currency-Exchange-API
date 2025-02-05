@@ -31,23 +31,28 @@ class CurrencyAPI:
         """Получить список конвертируемых валют."""
         response = requests.get(url=self.URL_GET_LIST, headers=self.HEADERS)
         return ResponseCurrencyList(
-            **await self.get_json_data_or_503(response=response)
+            **await self._get_json_data_or_503(response=response)
         )
 
     async def convert_currency(
             self, data: RequestCurrencyExchange
     ) -> ResponseCurrencyExchange:
         """Конвертация одной валюты в другую."""
-        url = (f"{self.PRE_URL_CONVERT}?to={data.to_currency}"
-               + f"&from={data.from_currency}&amount={data.amount}")
-        json_data = await self.get_json_data_or_503(
+        await self._check_currency(
+            to_currency=data.to_currency, from_currency=data.from_currency
+        )
+        url = (
+            f"{self.PRE_URL_CONVERT}?to={data.to_currency}"
+            + f"&from={data.from_currency}&amount={data.amount}"
+        )
+        json_data = await self._get_json_data_or_503(
             response=requests.get(url=url, headers=self.HEADERS)
         )
         return ResponseCurrencyExchange(
-            **{**data, "result": json_data.get("result")}
+            **{**data.model_dump(), "result": json_data.get("result")}
         )
 
-    async def get_json_data_or_503(
+    async def _get_json_data_or_503(
             self, response: Response
     ) -> Dict[str, Any]:
         """Возврат тела ответа или логирование и райз ошибки сервера."""
@@ -62,3 +67,25 @@ class CurrencyAPI:
                 detail="Сервис в данный момент недоступен"
             )
         return json_data
+
+    async def _check_currency(
+            self, from_currency: str, to_currency: str
+    ) -> None:
+        """Проверка доступности валют."""
+        currency_list = await self.get_currency_list()
+        if not currency_list.currencies.get(from_currency):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Валюта from_currency = {from_currency}"
+                    + f" не поддерживается [Попробуйте from_currency = EUR]."
+                )
+            )
+        if not currency_list.currencies.get(to_currency):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Валюта to_currency = {to_currency}"
+                    + f" не поддерживается [Попробуйте to_currency = RUB]."
+                )
+            )
