@@ -20,7 +20,8 @@ class FastAPIApp:
     def __init__(self) -> None:
         """
         ### Инициализирует экземпляр `FastAPIApp`.
-                Импортирует мидлвари, роуты, и документацию в приложение
+            Импортирует промежуточные обработчики запросов, роуты,
+            и документацию в приложение
         """
         init_loggers()
 
@@ -32,11 +33,11 @@ class FastAPIApp:
     def include_middlewares(self) -> None:
         """
         ### Добавляет промежуточное программное обеспечение `(middleware) `
-                в приложение `FastAPI`.
+            в приложение `FastAPI`.
         """
-        self.app.add_middleware(ExceptionHandlerMiddleware)
+        self.app.add_middleware(middleware_class=ExceptionHandlerMiddleware)
         self.app.add_middleware(
-            CORSMiddleware,
+            middleware_class=CORSMiddleware,
             allow_origins=settings.ALLOWED_HOSTS.split(),
             allow_credentials=True,
             allow_methods=["*"],
@@ -79,9 +80,9 @@ def create_app() -> FastAPI:
     ## Создает и возвращает экземпляр `FastAPI` приложения.
 
     ### Этот метод инициализирует экземпляр класса `FastAPIApp`,
-            который настраивает и конфигурирует приложение FastAPI.
+        который настраивает и конфигурирует приложение FastAPI.
     ### Затем он возвращает сам экземпляр FastAPI, который можно использовать
-            для дальнейшей работы с приложением.
+        для дальнейшей работы с приложением.
 
     ### Returns:
         FastAPI: Экземпляр FastAPI приложения.
