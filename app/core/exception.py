@@ -71,9 +71,13 @@ class ForbiddenError(GlobalTypeError):
 
 
 class LockedError(GlobalTypeError):
-    """Ошибка формат содержимого запроса не поддерживается"""
 
     detail: str = """Ресурс заблокирован"""
+
+
+class ServiceUnavailable(GlobalTypeError):
+
+    detail: str = """Сервис недоступен"""
 
 
 class ErrorDescriptions:
@@ -111,6 +115,12 @@ class ErrorDescriptions:
         return self.get_error_for_documentation(
             status_code=status.HTTP_409_CONFLICT,
             model_error=ConflictError()
+        )
+
+    def service_unavailable_entity(self):
+        return self.get_error_for_documentation(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            model_error=ServiceUnavailable()
         )
 
     def bad_request_entity(self):
