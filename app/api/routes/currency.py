@@ -1,35 +1,41 @@
-import logging
 from typing import Annotated
 
-import requests
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends
 from starlette import status
 
 from app.api.schemas.currency import ResponseCurrencyList
-from app.core.config import settings
 from app.core.security import get_current_user
+from app.utils.external_api import CurrencyAPI
 
-logger = logging.getLogger()
 currency_router = APIRouter(prefix="/currency", tags=["Currency"])
 
 
-@currency_router.get(path="/list/", response_model=ResponseCurrencyList)
-async def get_currency_list(
-        _: Annotated[str, Depends(get_current_user)]
+async def get_currency_service() -> CurrencyAPI:
+    """
+    Создает и возвращает экземпляр сервиса конвертации валют.
+    """
+    return CurrencyAPI()
+
+
+@currency_router.get(
+    path="/list/", response_model=ResponseCurrencyList,
+    status_code=status.HTTP_200_OK,
+)
+async def currency_list(
+        _: Annotated[str, Depends(get_current_user)],
+        currency_service: CurrencyAPI = Depends(get_currency_service)
 ) -> ResponseCurrencyList:
-    url = "https://api.apilayer.com/currency_data/list"
-    headers = {
-        "apikey": settings.CURRENCY_DATA_API
-    }
-    response = requests.get(url=url, headers=headers)
-    json_data = response.json()
+    """
+    ## Полный список поддерживаемых валют
 
-    if response.status_code != status.HTTP_200_OK or json_data.get("error"):
-        logger.error(response.status_code)
-        logger.error(response.text)
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Сервис в данный момент недоступен"
-        )
+    Отображение списка поддерживаемых валют и их кодов
 
-    return ResponseCurrencyList(**json_data)
+    ---
+    #### Возвращает следующие параметры:
+    * `success` - булево сообщение, успешен ли выполняемый запрос
+
+    * `symbols` - перечисление объектов содержащих кодировку
+        валюты и его расшифровку
+    ---
+    """
+    return await currency_service.get_currency_list()
