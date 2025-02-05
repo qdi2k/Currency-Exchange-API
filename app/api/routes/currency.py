@@ -29,6 +29,7 @@ async def get_currency_service() -> CurrencyAPI:
 @currency_router.get(
     path="/list/", response_model=ResponseCurrencyList,
     status_code=status.HTTP_200_OK,
+    responses={**responses_err.bad_request_entity()}
 )
 async def currency_list(
         _: Annotated[str, Depends(get_current_user)],
