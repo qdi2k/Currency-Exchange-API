@@ -170,4 +170,5 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+temp/
 test_main.py
