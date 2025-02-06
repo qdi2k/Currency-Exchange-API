@@ -8,7 +8,6 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.routes.auth import user_router
 from app.api.routes.currency import currency_router
-from app.api.routes.todo import todo_router
 from app.core.config import settings, API_TITLE, API_VERSION, API_DESCRIPTION
 from app.core.log_config import init_loggers
 from app.core.middleware import ExceptionHandlerMiddleware
@@ -56,7 +55,6 @@ class FastAPIApp:
         """
         ### Подключает роутеры к приложению `FastAPI`.
         """
-        self.app.include_router(todo_router, prefix="/api")
         self.app.include_router(user_router, prefix="/api")
         self.app.include_router(currency_router, prefix="/api")
 

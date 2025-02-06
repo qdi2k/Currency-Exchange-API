@@ -1,8 +1,8 @@
 """initial
 
-Revision ID: 98ac297259f1
-Revises: 78ca115f4f3a
-Create Date: 2025-01-26 17:01:03.056588
+Revision ID: 3bb7fc0fd691
+Revises: 
+Create Date: 2025-02-06 14:49:14.867349
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '98ac297259f1'
-down_revision: Union[str, None] = '78ca115f4f3a'
+revision: str = '3bb7fc0fd691'
+down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -25,10 +25,11 @@ def upgrade() -> None:
     sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('username', sa.String(length=50), nullable=False),
     sa.Column('password', sa.String(length=255), nullable=False),
+    sa.Column('verified', sa.Boolean(), nullable=False),
+    sa.Column('verification_token', sa.String(length=255), nullable=True),
     sa.Column('data_register', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('email'),
-    sa.UniqueConstraint('username')
+    sa.UniqueConstraint('email')
     )
     op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
     # ### end Alembic commands ###
