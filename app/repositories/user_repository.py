@@ -7,6 +7,10 @@ from app.repositories.base_repository import Repository
 
 
 class UserRepository(Repository):
+    """
+    Репозиторий для работы с моделью User.
+    """
+
     model = User
 
     async def update_one(self, user_id: int, data: Dict[str, Any]) -> None:
