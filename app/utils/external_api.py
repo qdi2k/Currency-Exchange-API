@@ -30,9 +30,7 @@ class CurrencyAPI:
     async def get_currency_list(self) -> ResponseCurrencyList:
         """Получить список конвертируемых валют."""
         response = requests.get(url=self.URL_GET_LIST, headers=self.HEADERS)
-        return ResponseCurrencyList(
-            **await self._get_json_data_or_503(response=response)
-        )
+        return await self._get_currencies_from_response(response=response)
 
     async def convert_currency(
             self, data: RequestCurrencyExchange
@@ -43,7 +41,7 @@ class CurrencyAPI:
         )
         url = (
             f"{self.PRE_URL_CONVERT}?to={data.to_currency}"
-            + f"&from={data.from_currency}&amount={data.amount}"
+            f"&from={data.from_currency}&amount={data.amount}"
         )
         json_data = await self._get_json_data_or_503(
             response=requests.get(url=url, headers=self.HEADERS)
@@ -67,6 +65,15 @@ class CurrencyAPI:
                 detail="Сервис в данный момент недоступен"
             )
         return json_data
+
+    async def _get_currencies_from_response(
+            self, response: Response
+    ) -> ResponseCurrencyList:
+        """Получить список валют из ответа запроса."""
+        json_data = await self._get_json_data_or_503(response=response)
+        return ResponseCurrencyList(
+            currencies=json_data.get("currencies")
+        )
 
     async def _check_currency(
             self, from_currency: str, to_currency: str
