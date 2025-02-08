@@ -20,6 +20,10 @@ LOG_FILE: str = os.path.join(BASE_DIR, "logs", LOG_FILE)
 
 def init_loggers() -> logging.Logger:
     """Инициализация параметров логирования."""
+    logs_dir = os.path.join(BASE_DIR, "logs")
+    if not os.path.exists(logs_dir):
+        os.makedirs(logs_dir)
+
     logger: logging.Logger = logging.getLogger()
     logger.setLevel(level=LOG_LEVEL)
 
