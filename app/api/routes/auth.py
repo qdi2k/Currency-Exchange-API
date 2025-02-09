@@ -86,6 +86,7 @@ async def accept_user(
 
 @user_router.post(
     path="/login/", response_model=ResponseUserLogin,
+    status_code=status.HTTP_200_OK,
     responses={
         **responses_err.not_found_entity(),
         **responses_err.method_not_allowed_entity()
